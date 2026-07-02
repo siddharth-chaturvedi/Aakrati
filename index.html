@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Aakrati</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Dancing+Script:wght@600;700&display=swap');
+
+  :root{
+    --petal-1: #ffe27a;
+    --petal-2: #ffb23e;
+    --petal-3: #ff8a3d;
+    --petal-deep: #d95d1a;
+    --center: #8a5a2e;
+    --center-dark: #4a2b12;
+    --cream: #fff8ea;
+    --rose: #ff6b6b;
+    --bg-a: #150a05;
+    --bg-b: #2b1408;
+    --bg-c: #4a230e;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; height:100%; overflow-x:hidden; }
+
+  body{
+    min-height:100vh;
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--cream);
+    background: var(--bg-a);
+    position: relative;
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.2s !important; }
+  }
+
+  /* ---------- Mesh gradient background ---------- */
+  .mesh{
+    position: fixed; inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(255,138,61,0.35) 0%, transparent 42%),
+      radial-gradient(circle at 82% 15%, rgba(255,226,122,0.22) 0%, transparent 40%),
+      radial-gradient(circle at 75% 78%, rgba(255,107,107,0.18) 0%, transparent 45%),
+      radial-gradient(circle at 20% 85%, rgba(217,93,26,0.3) 0%, transparent 45%),
+      linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 55%, var(--bg-c) 100%);
+    background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%, 100% 100%;
+    animation: meshDrift 22s ease-in-out infinite alternate;
+  }
+  @keyframes meshDrift{
+    0%{ background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 0; }
+    100%{ background-position: 20% 15%, 80% 20%, 75% 85%, 15% 90%, 0 0; }
+  }
+
+  .grain{
+    position: fixed; inset:0; z-index: 1;
+    opacity: 0.05; pointer-events:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .cursor-glow{
+    position: fixed;
+    width: 460px; height: 460px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,178,62,0.16) 0%, transparent 68%);
+    pointer-events:none;
+    z-index: 2;
+    transform: translate(-50%,-50%);
+    transition: left 0.12s ease-out, top 0.12s ease-out;
+  }
+
+  canvas#petals{
+    position: fixed; inset:0;
+    z-index: 2;
+    pointer-events:none;
+  }
+
+  .wrap{
+    position: relative;
+    z-index: 3;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 6vh 6vw 8vh;
+    text-align:center;
+    perspective: 1200px;
+  }
+
+  /* ---------- Sunburst rays behind flower ---------- */
+  .rays{
+    position:absolute;
+    top:50%; left:50%;
+    width: 620px; height:620px;
+    transform: translate(-50%,-50%);
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(255,210,120,0.14) 0deg 4deg,
+      transparent 4deg 16deg
+    );
+    border-radius: 50%;
+    animation: spinSlow 60s linear infinite;
+    z-index: 0;
+    filter: blur(0.5px);
+    mask-image: radial-gradient(circle, black 30%, transparent 72%);
+    -webkit-mask-image: radial-gradient(circle, black 30%, transparent 72%);
+  }
+  @keyframes spinSlow{ from{ transform: translate(-50%,-50%) rotate(0deg);} to{ transform: translate(-50%,-50%) rotate(360deg);} }
+
+  /* ---------- Interactive Sunflower ---------- */
+  .stage{
+    position: relative;
+    width: min(340px, 68vw);
+    height: min(340px, 68vw);
+    margin: 0 auto 1.2rem;
+    cursor: pointer;
+    -webkit-user-select:none; user-select:none;
+    transform-style: preserve-3d;
+    transition: transform 0.25s ease-out;
+  }
+  .sunflower{
+    position:absolute; inset:0;
+    filter: drop-shadow(0 22px 46px rgba(0,0,0,0.55)) drop-shadow(0 0 30px rgba(255,178,62,0.15));
+    transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
+    animation: idleSway 5s ease-in-out infinite;
+    z-index: 2;
+  }
+  .stage.bloomed .sunflower{ transform: scale(1.1); animation: none; }
+  @keyframes idleSway{
+    0%,100%{ transform: rotate(-3deg); }
+    50%{ transform: rotate(3deg); }
+  }
+
+  /* two layered rings of petals for depth */
+  .petal{
+    position:absolute;
+    top:50%; left:50%;
+    width: 18%;
+    height: 24%;
+    transform-origin: 50% 100%;
+    border-radius: 50% 50% 48% 48% / 65% 65% 35% 35%;
+    box-shadow: inset 0 -6px 12px rgba(120,50,5,0.35), 0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.95s cubic-bezier(.22,1,.36,1), height 0.95s cubic-bezier(.22,1,.36,1);
+  }
+  .petal.outer{
+    background: linear-gradient(180deg, var(--petal-1) 0%, var(--petal-2) 50%, var(--petal-deep) 100%);
+    transform: translate(-50%,-38%) rotate(var(--rot)) scale(0.3);
+  }
+  .petal.inner{
+    width: 13%; height: 17%;
+    background: linear-gradient(180deg, #fff3cf 0%, var(--petal-1) 60%, var(--petal-2) 100%);
+    transform: translate(-50%,-32%) rotate(var(--rot)) scale(0.25);
+    opacity: 0.95;
+  }
+  .stage.bloomed .petal.outer{
+    height: 48%;
+    transform: translate(-50%,-102%) rotate(var(--rot)) scale(1);
+  }
+  .stage.bloomed .petal.inner{
+    height: 30%;
+    transform: translate(-50%,-72%) rotate(var(--rot)) scale(1);
+  }
+
+  .core{
+    position:absolute;
+    top:50%; left:50%;
+    width: 38%; height:38%;
+    transform: translate(-50%,-50%);
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #b8823f 0%, var(--center) 45%, var(--center-dark) 100%);
+    box-shadow: 0 0 0 0 rgba(255,215,106,0);
+    transition: box-shadow 0.9s ease;
+    z-index: 4;
+  }
+  .stage.bloomed .core{ box-shadow: 0 0 0 10px rgba(255,215,106,0.16), 0 0 50px rgba(255,180,50,0.4); }
+  .core::after{
+    content:"";
+    position:absolute; inset: 12%;
+    border-radius:50%;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.35) 1.6px, transparent 1.7px);
+    background-size: 10px 10px;
+    opacity: 0.75;
+  }
+  .core::before{
+    content:"";
+    position:absolute; top:18%; left:22%;
+    width: 26%; height: 18%;
+    border-radius: 50%;
+    background: rgba(255,235,190,0.35);
+    filter: blur(3px);
+  }
+
+  .tap-hint{
+    position: absolute;
+    bottom: -2.8rem; left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255,248,234,0.65);
+    animation: pulseHint 2s ease-in-out infinite;
+    white-space: nowrap;
+  }
+  .stage.bloomed .tap-hint{ opacity:0; }
+  @keyframes pulseHint{
+    0%,100%{ opacity: 0.4; }
+    50%{ opacity: 0.9; }
+  }
+
+  .eyebrow{
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: #ffd76a;
+    margin: 3rem 0 0.7rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.1s forwards;
+  }
+  h1.name{
+    position: relative;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: clamp(2.6rem, 8.5vw, 4.6rem);
+    margin: 0 0 0.2rem;
+    opacity: 0;
+    background: linear-gradient(100deg, #ffe9b8 0%, #ffd76a 25%, #fff3cf 50%, #ffb23e 75%, #ffe9b8 100%);
+    background-size: 250% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: fadeUp 0.8s ease 0.25s forwards, shimmerText 6s linear infinite;
+    filter: drop-shadow(0 2px 26px rgba(255,183,51,0.35));
+  }
+  @keyframes shimmerText{
+    to{ background-position: 250% center; }
+  }
+  .title-line{
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1rem, 2.4vw, 1.3rem);
+    color: var(--petal-2);
+    margin: 0 0 0.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.4s forwards;
+  }
+
+  .reveal{
+    max-width: 600px;
+    margin-top: 1.6rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 1s cubic-bezier(.2,.8,.2,1), opacity 0.8s ease, margin 0.8s ease;
+  }
+  .revealed{
+    max-height: 700px !important;
+    opacity: 1 !important;
+    margin-top: 2.2rem !important;
+  }
+
+  .card{
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,248,234,0.10), rgba(255,248,234,0.03));
+    border: 1px solid rgba(255,215,106,0.28);
+    border-radius: 24px;
+    padding: clamp(1.8rem, 4.5vw, 2.8rem);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 25px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+    overflow: hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute; inset:-40%;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(255,210,120,0.18) 8%, transparent 16%);
+    animation: cardSheen 5s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes cardSheen{ to{ transform: rotate(360deg); } }
+
+  .sorry-word{
+    position: relative;
+    display:block;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(2.1rem, 6.4vw, 3.2rem);
+    color: #fff3d6;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
+    text-shadow: 0 0 30px rgba(255,200,120,0.25);
+  }
+
+  .mesmerizing{
+    position: relative;
+    display:inline-block;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(1.25rem, 3.1vw, 1.55rem);
+    color: #ffd76a;
+    margin-top: 1rem;
+    animation: glow 3s ease-in-out infinite;
+  }
+  @keyframes glow{
+    0%,100%{ text-shadow: 0 0 10px rgba(255,215,106,0.18); }
+    50%{ text-shadow: 0 0 26px rgba(255,215,106,0.65); }
+  }
+
+  .sub{
+    position: relative;
+    font-size: clamp(1.02rem, 2.3vw, 1.22rem);
+    color: #f3ddb2;
+    line-height: 1.7;
+    margin-top: 0.9rem;
+  }
+
+  .burst{
+    position:absolute; inset:0; pointer-events:none; z-index: 5;
+  }
+
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(14px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .footer-note{
+    margin-top: 2.6rem;
+    font-size: 0.82rem;
+    color: rgba(255,248,234,0.42);
+    letter-spacing: 0.05em;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.5s forwards;
+  }
+</style>
+</head>
+<body>
+
+<div class="mesh"></div>
+<div class="grain"></div>
+<canvas id="petals"></canvas>
+<div class="cursor-glow" id="glow"></div>
+
+<div class="wrap">
+
+  <div class="eyebrow">a note for</div>
+  <h1 class="name">Aakrati</h1>
+  <p class="title-line">my Magnetic Gaze Sunflower 🌻</p>
+
+  <div class="stage" id="stage" role="button" tabindex="0" aria-label="Tap the sunflower to open the message">
+    <div class="rays"></div>
+    <div class="burst" id="burst"></div>
+    <div class="sunflower" id="sunflower">
+      <div class="core"></div>
+      <div class="petal outer" style="--rot:0deg"></div>
+      <div class="petal outer" style="--rot:30deg"></div>
+      <div class="petal outer" style="--rot:60deg"></div>
+      <div class="petal outer" style="--rot:90deg"></div>
+      <div class="petal outer" style="--rot:120deg"></div>
+      <div class="petal outer" style="--rot:150deg"></div>
+      <div class="petal outer" style="--rot:180deg"></div>
+      <div class="petal outer" style="--rot:210deg"></div>
+      <div class="petal outer" style="--rot:240deg"></div>
+      <div class="petal outer" style="--rot:270deg"></div>
+      <div class="petal outer" style="--rot:300deg"></div>
+      <div class="petal outer" style="--rot:330deg"></div>
+      <div class="petal inner" style="--rot:15deg"></div>
+      <div class="petal inner" style="--rot:45deg"></div>
+      <div class="petal inner" style="--rot:75deg"></div>
+      <div class="petal inner" style="--rot:105deg"></div>
+      <div class="petal inner" style="--rot:135deg"></div>
+      <div class="petal inner" style="--rot:165deg"></div>
+      <div class="petal inner" style="--rot:195deg"></div>
+      <div class="petal inner" style="--rot:225deg"></div>
+      <div class="petal inner" style="--rot:255deg"></div>
+      <div class="petal inner" style="--rot:285deg"></div>
+      <div class="petal inner" style="--rot:315deg"></div>
+      <div class="petal inner" style="--rot:345deg"></div>
+    </div>
+    <div class="tap-hint">tap the sunflower</div>
+  </div>
+
+  <div class="reveal" id="reveal">
+    <div class="card">
+      <span class="sorry-word">I'm sorry.</span>
+      <p class="sub">That's all I wanted you to know first &mdash; before anything else, before any explanation.</p>
+      <span class="mesmerizing">You are mesmerizing.</span>
+    </div>
+  </div>
+
+  <p class="footer-note">made for you, Aakrati</p>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const reveal = document.getElementById('reveal');
+  const burst = document.getElementById('burst');
+  const glow = document.getElementById('glow');
+
+  function bloom(){
+    if(stage.classList.contains('bloomed')) return;
+    stage.classList.add('bloomed');
+    setTimeout(()=> reveal.classList.add('revealed'), 350);
+    spawnBurst();
+  }
+  stage.addEventListener('click', bloom);
+  stage.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); bloom(); }
+  });
+
+  function spawnBurst(){
+    const colors = ['#ffe27a','#ffb23e','#ff8a3d','#fff3cf'];
+    for(let i=0;i<26;i++){
+      const p = document.createElement('div');
+      const angle = (Math.PI*2*i)/26 + Math.random()*0.3;
+      const dist = 100 + Math.random()*90;
+      const size = 5 + Math.random()*8;
+      p.style.position='absolute';
+      p.style.top='50%'; p.style.left='50%';
+      p.style.width=size+'px'; p.style.height=size+'px';
+      p.style.borderRadius='50%';
+      p.style.background = colors[i%colors.length];
+      p.style.boxShadow = '0 0 8px rgba(255,200,120,0.6)';
+      p.style.opacity='0.95';
+      p.style.transform='translate(-50%,-50%)';
+      p.style.transition='transform 1s cubic-bezier(.2,.8,.2,1), opacity 1s ease';
+      burst.appendChild(p);
+      requestAnimationFrame(()=>{
+        const x = Math.cos(angle)*dist;
+        const y = Math.sin(angle)*dist;
+        p.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        p.style.opacity='0';
+      });
+      setTimeout(()=> p.remove(), 1050);
+    }
+  }
+
+  // cursor glow + subtle 3D tilt on the flower stage
+  window.addEventListener('pointermove', e=>{
+    glow.style.left = e.clientX+'px';
+    glow.style.top = e.clientY+'px';
+
+    const r = stage.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+    const dx = (e.clientX - cx) / r.width;
+    const dy = (e.clientY - cy) / r.height;
+    const max = 10;
+    stage.style.transform = `rotateY(${dx*max}deg) rotateX(${-dy*max}deg)`;
+  });
+  window.addEventListener('pointerleave', ()=>{
+    stage.style.transform = 'rotateY(0deg) rotateX(0deg)';
+  });
+
+  // ---- Falling petals + glowing pollen dust ----
+  const canvas = document.getElementById('petals');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const petalColors = ['#ffe27a','#ffb23e','#ff8a3d','#d95d1a'];
+  const petals = Array.from({length: 24}).map(()=> spawnPetal(true));
+  const dust = Array.from({length: 40}).map(()=> spawnDust(true));
+
+  function spawnPetal(randomY){
+    return {
+      x: Math.random()*W,
+      y: randomY ? Math.random()*H : -20,
+      size: 6 + Math.random()*8,
+      speedY: 0.35 + Math.random()*0.75,
+      speedX: (Math.random()-0.5)*0.6,
+      rot: Math.random()*360,
+      rotSpeed: (Math.random()-0.5)*1.3,
+      sway: Math.random()*Math.PI*2,
+      swaySpeed: 0.008 + Math.random()*0.01,
+      color: petalColors[Math.floor(Math.random()*petalColors.length)],
+      opacity: 0.35 + Math.random()*0.4
+    };
+  }
+  function spawnDust(randomY){
+    return {
+      x: Math.random()*W,
+      y: randomY ? Math.random()*H : H + 10,
+      size: 1 + Math.random()*2,
+      speedY: -(0.15 + Math.random()*0.3),
+      sway: Math.random()*Math.PI*2,
+      swaySpeed: 0.01 + Math.random()*0.015,
+      opacity: 0.2 + Math.random()*0.5
+    };
+  }
+
+  function drawPetal(p){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot * Math.PI/180);
+    ctx.globalAlpha = p.opacity;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.ellipse(0,0, p.size*0.5, p.size, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawDust(d){
+    ctx.save();
+    ctx.globalAlpha = d.opacity;
+    ctx.fillStyle = '#ffe9b8';
+    ctx.shadowColor = '#ffd76a';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    for(const p of petals){
+      p.sway += p.swaySpeed;
+      p.x += p.speedX + Math.sin(p.sway)*0.5;
+      p.y += p.speedY;
+      p.rot += p.rotSpeed;
+      if(p.y > H + 20) Object.assign(p, spawnPetal(false));
+      drawPetal(p);
+    }
+    for(const d of dust){
+      d.sway += d.swaySpeed;
+      d.x += Math.sin(d.sway)*0.3;
+      d.y += d.speedY;
+      if(d.y < -10) Object.assign(d, spawnDust(false));
+      drawDust(d);
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+</script>
+
+</body>
+</html>
